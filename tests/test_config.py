@@ -21,8 +21,20 @@ def test_provider_enum_values() -> None:
     assert LLMProvider.OPENROUTER == "openrouter"
 
 
-def test_optional_keys_are_none_by_default() -> None:
-    settings = Settings()
+def test_optional_keys_are_none_by_default(monkeypatch: pytest.MonkeyPatch) -> None:
+    # Clear any real API keys loaded from .env so the defaults are observable.
+    for key in (
+        "OPENAI_API_KEY",
+        "ANTHROPIC_API_KEY",
+        "OPENROUTER_API_KEY",
+        "TAVILY_API_KEY",
+        "EXA_API_KEY",
+        "FIRECRAWL_API_KEY",
+        "DATABASE_URL",
+    ):
+        monkeypatch.delenv(key, raising=False)
+
+    settings = Settings(_env_file=None)  # type: ignore[call-arg]
     assert settings.openai_api_key is None
     assert settings.anthropic_api_key is None
     assert settings.openrouter_api_key is None

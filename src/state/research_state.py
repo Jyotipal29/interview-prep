@@ -1,7 +1,14 @@
 import operator
 from typing import Annotated, Any, TypedDict
 
-from src.models.schemas import AgentExecution, AgentResult, Evidence, ResearchGap, ResearchPlan
+from src.models.schemas import (
+    AgentExecution,
+    AgentResult,
+    Evidence,
+    ResearchGap,
+    ResearchPlan,
+    ResearchTask,
+)
 from src.shared.ids import generate_research_id
 
 
@@ -20,9 +27,17 @@ class ResearchState(TypedDict, total=False):
     # ── Session identity ────────────────────────────────────────────────────
     research_id: str
     company_name: str
+    user_query: str
 
     # ── Planning ───────────────────────────────────────────────────────────
     research_plan: ResearchPlan | None
+
+    # ── Dispatch tracking ──────────────────────────────────────────────────
+    # active_task is injected per-branch via Send() — only valid inside a stub/agent node.
+    active_task: ResearchTask | None
+    pending_tasks: list[str]                             # replace-semantics: set by dispatcher
+    completed_tasks: Annotated[list[str], operator.add]  # appended by each research stub
+    failed_tasks: Annotated[list[str], operator.add]     # invalid or errored task IDs
 
     # ── Agent data (replace-semantics: latest agent output wins) ───────────
     company_profile: dict[str, Any] | None
@@ -55,12 +70,20 @@ class ResearchState(TypedDict, total=False):
     final_report: str | None
 
 
-def create_initial_state(company_name: str) -> ResearchState:
+def create_initial_state(
+    company_name: str,
+    user_query: str = "",
+) -> ResearchState:
     """Return a fully-initialised state dict for a new research run."""
     return ResearchState(
         research_id=generate_research_id(),
         company_name=company_name,
+        user_query=user_query or f"Research {company_name}",
         research_plan=None,
+        active_task=None,
+        pending_tasks=[],
+        completed_tasks=[],
+        failed_tasks=[],
         company_profile=None,
         leadership_data=None,
         compensation_data=None,
