@@ -1,7 +1,8 @@
 import operator
 from typing import Annotated, Any, TypedDict
 
-from src.models.schemas import AgentResult, Evidence, ResearchGap, ResearchPlan
+from src.models.schemas import AgentExecution, AgentResult, Evidence, ResearchGap, ResearchPlan
+from src.shared.ids import generate_research_id
 
 
 class ResearchState(TypedDict, total=False):
@@ -16,7 +17,8 @@ class ResearchState(TypedDict, total=False):
     without being required to supply every field.
     """
 
-    # ── Input ──────────────────────────────────────────────────────────────
+    # ── Session identity ────────────────────────────────────────────────────
+    research_id: str
     company_name: str
 
     # ── Planning ───────────────────────────────────────────────────────────
@@ -46,6 +48,7 @@ class ResearchState(TypedDict, total=False):
     # ── Synthesis (append-semantics) ───────────────────────────────────────
     research_gaps: Annotated[list[ResearchGap], operator.add]
     agent_results: Annotated[list[AgentResult], operator.add]
+    agent_executions: Annotated[list[AgentExecution], operator.add]
     errors: Annotated[list[str], operator.add]
 
     # ── Output ─────────────────────────────────────────────────────────────
@@ -55,6 +58,7 @@ class ResearchState(TypedDict, total=False):
 def create_initial_state(company_name: str) -> ResearchState:
     """Return a fully-initialised state dict for a new research run."""
     return ResearchState(
+        research_id=generate_research_id(),
         company_name=company_name,
         research_plan=None,
         company_profile=None,
@@ -74,6 +78,7 @@ def create_initial_state(company_name: str) -> ResearchState:
         hiring_assessment=None,
         research_gaps=[],
         agent_results=[],
+        agent_executions=[],
         errors=[],
         final_report=None,
     )
